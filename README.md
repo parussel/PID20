@@ -66,8 +66,10 @@ update all https://raw.githubusercontent.com/parussel/PID20/main/controls_pid20.
 ```
 
 ```text
-reload 98_PID20
+shutdown restart
 ```
+
+Nach dem Update FHEM mit `shutdown restart` neu starten, sobald FHEM dazu auffordert. Dadurch werden die neue Moduldatei und ihre Dokumentation vollständig aktiviert.
 
 Mit `update list` lässt sich die registrierte Quelle kontrollieren. Nach der einmaligen Registrierung wird sie auch bei einem normalen `update` berücksichtigt.
 
@@ -104,7 +106,7 @@ update 98_PID20.pm https://fhem.de/fhemupdate/controls_fhem.txt
 ```
 
 ```text
-reload 98_PID20
+shutdown restart
 ```
 
 Vor einem Rückwechsel prüfen, ob `pidDIntegration` verwendet wird. Dieses Attribut steht im offiziellen Stand derzeit nicht zur Verfügung.
