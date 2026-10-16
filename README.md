@@ -21,25 +21,45 @@ attr <PID20-Device> pidDIntegration 10
 
 ## Installation und automatische Updates
 
-Die Befehle werden im FHEM-Kommandoeingabefeld ausgeführt.
+Die Befehle werden im FHEM-Kommandoeingabefeld ausgeführt. Jeden dargestellten Befehl einzeln eingeben, mit Enter ausführen und seine Rückmeldung abwarten. Nicht mehrere Befehle gemeinsam in das Eingabefeld kopieren.
 
 ### 1. Offizielles PID20 quellenspezifisch ausschließen
 
-Der folgende Befehl ergänzt die Regel, ohne vorhandene Ausschlüsse zu überschreiben:
+Der folgende Befehl ergänzt die Regel, ohne vorhandene Ausschlüsse zu überschreiben. Er schließt ausschließlich `FHEM/98_PID20.pm` aus der offiziellen Quelle `fhem.de` aus; andere Dateien und andere Updatequellen bleiben unberührt:
 
 ```text
 { my $rule = 'fhem\.de.*:FHEM/98_PID20\.pm'; my @rules = grep { length } split(/[\s,]+/, AttrVal('global','exclude_from_update','')); unless (grep { $_ eq $rule } @rules) { push @rules, $rule; CommandAttr(undef, 'global exclude_from_update '.join(' ', @rules)); } }
+```
+
+Danach die Änderung mit einem eigenen Befehl speichern:
+
+```text
 save
 ```
 
-Die Regel passt nur auf das PID20 aus der offiziellen Quelle `fhem.de`. Die Community-Quelle bleibt aktualisierbar.
+Die gespeicherte Regel kontrollieren:
+
+```text
+list global exclude_from_update
+```
+
+In der Ausgabe muss `fhem\.de.*:FHEM/98_PID20\.pm` erscheinen. Die Community-Quelle bleibt aktualisierbar.
 
 ### 2. Community-Quelle registrieren und installieren
 
 ```text
 update add https://raw.githubusercontent.com/parussel/PID20/main/controls_pid20.txt
+```
+
+```text
 update check https://raw.githubusercontent.com/parussel/PID20/main/controls_pid20.txt
+```
+
+```text
 update all https://raw.githubusercontent.com/parussel/PID20/main/controls_pid20.txt
+```
+
+```text
 reload 98_PID20
 ```
 
@@ -63,6 +83,11 @@ Dann ausschließlich die zuvor ergänzte Ausschlussregel entfernen und andere Re
 
 ```text
 { my $rule = 'fhem\.de.*:FHEM/98_PID20\.pm'; my @rules = grep { length && $_ ne $rule } split(/[\s,]+/, AttrVal('global','exclude_from_update','')); if (@rules) { CommandAttr(undef, 'global exclude_from_update '.join(' ', @rules)); } else { CommandDeleteAttr(undef, 'global exclude_from_update'); } }
+```
+
+Danach wieder separat speichern:
+
+```text
 save
 ```
 
@@ -70,6 +95,9 @@ Anschließend das offizielle Modul wiederherstellen:
 
 ```text
 update 98_PID20.pm https://fhem.de/fhemupdate/controls_fhem.txt
+```
+
+```text
 reload 98_PID20
 ```
 
