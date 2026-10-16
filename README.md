@@ -25,10 +25,16 @@ Die Befehle werden im FHEM-Kommandoeingabefeld ausgeführt. Jeden dargestellten 
 
 ### 1. Offizielles PID20 quellenspezifisch ausschließen
 
-Der folgende Befehl ergänzt die Regel, ohne vorhandene Ausschlüsse zu überschreiben. Er schließt ausschließlich `FHEM/98_PID20.pm` aus der offiziellen Quelle `fhem.de` aus; andere Dateien und andere Updatequellen bleiben unberührt:
+Zuerst den aktuellen Wert kontrollieren:
 
 ```text
-{ my $rule = 'fhem\.de.*:FHEM/98_PID20\.pm'; my @rules = grep { length } split(/[\s,]+/, AttrVal('global','exclude_from_update','')); unless (grep { $_ eq $rule } @rules) { push @rules, $rule; CommandAttr(undef, 'global exclude_from_update '.join(' ', @rules)); } }
+{ 'WERT: '.AttrVal('global','exclude_from_update','NICHT_GESETZT') }
+```
+
+Nur wenn `fhem\.de.*:FHEM/98_PID20\.pm` noch nicht im ausgegebenen Wert enthalten ist, die Regel mit dem FHEM-Standardbefehl `attr -a` ergänzen. Vorhandene Ausschlüsse bleiben dabei erhalten. Die Regel schließt ausschließlich `FHEM/98_PID20.pm` aus der offiziellen Quelle `fhem.de` aus; andere Dateien und andere Updatequellen bleiben unberührt:
+
+```text
+attr -a global exclude_from_update fhem\.de.*:FHEM/98_PID20\.pm
 ```
 
 Danach die Änderung mit einem eigenen Befehl speichern:
@@ -37,10 +43,10 @@ Danach die Änderung mit einem eigenen Befehl speichern:
 save
 ```
 
-Die gespeicherte Regel kontrollieren:
+Die gespeicherte Regel erneut kontrollieren:
 
 ```text
-list global exclude_from_update
+{ 'WERT: '.AttrVal('global','exclude_from_update','NICHT_GESETZT') }
 ```
 
 In der Ausgabe muss `fhem\.de.*:FHEM/98_PID20\.pm` erscheinen. Die Community-Quelle bleibt aktualisierbar.
@@ -79,10 +85,10 @@ Zuerst die Community-Quelle entfernen:
 update delete https://raw.githubusercontent.com/parussel/PID20/main/controls_pid20.txt
 ```
 
-Dann ausschließlich die zuvor ergänzte Ausschlussregel entfernen und andere Regeln erhalten:
+Dann ausschließlich die zuvor ergänzte Ausschlussregel mit dem FHEM-Standardbefehl `attr -r` entfernen. Andere Regeln bleiben erhalten:
 
 ```text
-{ my $rule = 'fhem\.de.*:FHEM/98_PID20\.pm'; my @rules = grep { length && $_ ne $rule } split(/[\s,]+/, AttrVal('global','exclude_from_update','')); if (@rules) { CommandAttr(undef, 'global exclude_from_update '.join(' ', @rules)); } else { CommandDeleteAttr(undef, 'global exclude_from_update'); } }
+attr -r global exclude_from_update fhem\.de.*:FHEM/98_PID20\.pm
 ```
 
 Danach wieder separat speichern:
