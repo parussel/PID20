@@ -4,7 +4,7 @@ Unabhängige Community-Weiterentwicklung des FHEM-Reglers `PID20`. Dateiname `98
 
 > **Status und Risiko:** Dieses Projekt ist derzeit kein offizieller Bestandteil von FHEM. Es wurde automatisiert, isoliert auf einem Raspberry Pi 4 und anschließend mit bestehenden PID20-Definitionen auf einem Raspberry Pi 3 geprüft. Eine breite Erprobung in unterschiedlichen Heizungsanlagen steht noch aus. Vor der Installation bitte eine Sicherung anlegen und die Regelung beobachten. Die Nutzung erfolgt in eigener Verantwortung.
 
-Projektinformationen: [153er-netz.de – Entwicklung](https://153er-netz.de/Seiten/Entwicklung)
+Projektinformationen: [153er-netz.de – Entwicklung](https://153er-netz.de/seiten/entwicklung.html)
 
 ## Was ist neu?
 
