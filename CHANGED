@@ -1,0 +1,6 @@
+2026-10-16 PID20 1.1.1-community
+- Fixed pidReverseAction so the D portion follows the same direction as P and I.
+- Added optional D smoothing with pidDIntegration and linear regression.
+- Reset the D history after successful reinitialization.
+- Preserved compatibility with existing PID20 definitions and default settings.
+
