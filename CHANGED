@@ -1,0 +1,5 @@
+2026-10-16 PID20 1.1.1-community
+- `pidReverseAction` kehrt jetzt auch den D-Anteil um.
+- `pidDIntegration` ergänzt eine optionale Glättung des D-Anteils.
+- Die D-Historie wird nach erfolgreicher Neuinitialisierung zurückgesetzt.
+- Bestehende Definitionen und Standardwerte bleiben kompatibel.
