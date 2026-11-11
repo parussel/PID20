@@ -7,7 +7,7 @@
 # Community project initiated by Frank Parussel.
 # Community contributions and future upstream adoption are welcome.
 # Community changes Copyright (C) 2026 Frank Parussel.
-# Project information: https://153er-netz.de/seiten/entwicklung.html
+# Project information: https://153er-netz.de/seiten/entwicklung/fhem.html
 #
 # Historical upstream revision marker (not the community version):
 # $Id: 98_PID20.pm 29516 2025-01-12 10:28:08Z betateilchen $
@@ -1108,7 +1108,7 @@ You can use any dummy-command in define syntax, which will be ignored, if this a
 	<ul>
 		<li><a href="http://forum.fhem.de/index.php/topic,17067.0.html">Discussion in FHEM forum</a></li><br/>
 		<li><a href="http://www.fhemwiki.de/wiki/PID20_-_Der_PID-Regler">Information in FHEM wiki</a></li><br/>
-		<li><a href="https://153er-netz.de/seiten/entwicklung.html">Community project information at 153er-netz.de</a></li><br/>
+		<li><a href="https://153er-netz.de/seiten/entwicklung/fhem.html">Community project information at 153er-netz.de</a></li><br/>
 		<li>Independent community edition; currently not an official FHEM release.</li><br/>
 	</ul>
 
@@ -1193,7 +1193,7 @@ You can use any dummy-command in define syntax, which will be ignored, if this a
 	<ul>
 		<li><a href="https://forum.fhem.de/index.php/topic,17067.0.html">Diskussion im FHEM-Forum</a></li>
 		<li><a href="https://www.fhemwiki.de/wiki/PID20_-_Der_PID-Regler">Informationen im FHEM-Wiki</a></li>
-		<li><a href="https://153er-netz.de/seiten/entwicklung.html">Community-Projektinformationen auf 153er-netz.de</a></li>
+		<li><a href="https://153er-netz.de/seiten/entwicklung/fhem.html">Community-Projektinformationen auf 153er-netz.de</a></li>
 		<li>Unabhängige Community-Ausgabe; derzeit keine offizielle FHEM-Version.</li>
 	</ul>
 </ul>
