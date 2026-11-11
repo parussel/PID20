@@ -10,7 +10,7 @@ Definitionen weiterverwendet werden können.
 > eine Sicherung erstellen und die Regelung beobachten. Nutzung in eigener
 > Verantwortung.
 
-Projektinformationen: [153er-netz.de – Entwicklung](https://153er-netz.de/seiten/entwicklung.html)
+Projektinformationen: [153er-netz.de – Entwicklung](https://153er-netz.de/seiten/entwicklung/fhem.html)
 
 ## Änderungen
 
