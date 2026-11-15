@@ -14,6 +14,8 @@ Projektinformationen: [153er-netz.de – Entwicklung](https://153er-netz.de/seit
 
 ## Änderungen
 
+### 15.11.2026 – Version 1.1.2-community
+
 - `pidActorErrorAction=errorPos` fährt die mit `pidActorErrorPos` festgelegte
   Sicherheitsposition beim erstmalig erkannten Sensor-Timeout jetzt sofort an.
   Der Befehl wartet nicht mehr auf das nächste Keep-Alive-Intervall.
@@ -24,19 +26,6 @@ Projektinformationen: [153er-netz.de – Entwicklung](https://153er-netz.de/seit
   den Zeitstempel bei unverändertem Messwert absichtlich fest und kann dadurch
   einen falschen Timeout auslösen. `event-on-change-reading` kann dagegen zur
   Begrenzung von Events und Logeinträgen bestehen bleiben.
-- `pidReverseAction=1` kehrt nun auch den D-Anteil um. P, I und D verwenden
-  dadurch dieselbe Wirkrichtung.
-- `pidDIntegration` kann den D-Anteil über mehrere Messzyklen glätten. Die
-  Steigung wird dafür mittels linearer Regression aus dem Verlauf berechnet.
-- Der Standardwert `pidDIntegration=1` erhält das bisherige Verhalten.
-- Nach erfolgreicher Neuinitialisierung (`INITIALIZED` oder `REREADCFG`) wird
-  die vorherige D-Historie verworfen.
-
-Beispiel für zehn vorherige Delta-Werte zusätzlich zum aktuellen Wert:
-
-```text
-attr <PID20-Device> pidDIntegration 10
-```
 
 Beispiel für einen Regler, der nach sechs Minuten ohne fortgeschriebenen
 Sensor-Zeitstempel sofort die geschlossene Sicherheitsposition anfährt:
@@ -50,6 +39,22 @@ attr <PID20-Device> pidSensorTimeout 360
 Die Werte sind an die eigene Anlage, den Aktor und den tatsächlichen
 Messzyklus anzupassen. Bei umgekehrter Aktorlogik kann eine andere
 Sicherheitsposition erforderlich sein.
+
+### 16.10.2026 – Version 1.1.1-community
+
+- `pidReverseAction=1` kehrt nun auch den D-Anteil um. P, I und D verwenden
+  dadurch dieselbe Wirkrichtung.
+- `pidDIntegration` kann den D-Anteil über mehrere Messzyklen glätten. Die
+  Steigung wird dafür mittels linearer Regression aus dem Verlauf berechnet.
+- Der Standardwert `pidDIntegration=1` erhält das bisherige Verhalten.
+- Nach erfolgreicher Neuinitialisierung (`INITIALIZED` oder `REREADCFG`) wird
+  die vorherige D-Historie verworfen.
+
+Beispiel für zehn vorherige Delta-Werte zusätzlich zum aktuellen Wert:
+
+```text
+attr <PID20-Device> pidDIntegration 10
+```
 
 ## Installation und Updates
 
