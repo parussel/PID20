@@ -12,10 +12,11 @@
 # Historical upstream revision marker (not the community version):
 # $Id: 98_PID20.pm 29516 2025-01-12 10:28:08Z betateilchen $
 #
-# Version 1.1.1-community (2026-10-16)
+# Version 1.1.2-community (2026-11-15)
 #   - Reverse the D portion together with P/I for pidReverseAction.
 #   - Add pidDIntegration using linear regression over delta history.
 #   - Clear derivative history after successful initialization/reload.
+#   - Command pidActorErrorPos immediately when a sensor timeout is detected.
 #
 # The original module and this community edition are distributed under the
 # GNU General Public License, version 2 or (at your option) any later version.
@@ -132,6 +133,9 @@
 # 2026-10-16    1.1.1-community - Reset derivative history on successful reinitialization
 #               so INITIALIZED/REREADCFG cannot reuse stale measurements.
 #
+# 2026-11-15    1.1.2-community - Command pidActorErrorPos immediately on the first
+#               detected sensor timeout. Freeze remains fully backward compatible.
+#
 ####################################################################################################
 =cut
 
@@ -145,8 +149,9 @@ use vars qw($readingFnAttributes);
 use vars qw(%modules);
 use vars qw($init_done);
 
-my $PID20_Version = "1.1.1-community";
+my $PID20_Version = "1.1.2-community";
 sub PID20_Calc($);
+sub PID20_Reinitialize($);
 ########################################
 sub PID20_Log($$$)
 {
@@ -240,8 +245,39 @@ sub PID20_Define($$$)
     . "&lt;sensor&gt;:reading:[regexp] &lt;actor&gt;[:cmd] ";
   }
   setNotifyDev($hash,'global');
-  return if !$init_done;
-  return PID20_Check($hash, $a[2], $a[3]);
+  $hash->{helper}{initRetries} = 0;
+  RemoveInternalTimer($name);
+  InternalTimer(gettimeofday() + 1, 'PID20_Reinitialize', $name, 0);
+  return;
+}
+
+sub PID20_Reinitialize($)
+{
+  my ($name) = @_;
+  my $hash = $defs{$name};
+  return unless $hash && ($hash->{TYPE}//'') eq 'PID20';
+  if (!$init_done) {
+    InternalTimer(gettimeofday() + 1, 'PID20_Reinitialize', $name, 0);
+    return;
+  }
+  my ($sensorinfo,$actorinfo) = split m{\s+}xms, ($hash->{DEF}//''), 2;
+  if (!defined($sensorinfo) || !defined($actorinfo)) {
+    readingsSingleUpdate($hash,'state','PID definition incomplete',1);
+    return;
+  }
+  if (!exists($hash->{helper}{rebindWasStopped})) {
+    $hash->{helper}{rebindWasStopped}=exists($hash->{helper}{stopped})
+      ? ($hash->{helper}{stopped}?1:0)
+      : (ReadingsVal($name,'state','') eq 'stopped'?1:0);
+  }
+  my $msg = PID20_Check($hash,$sensorinfo,$actorinfo);
+  if ($msg && ++$hash->{helper}{initRetries} < 60) {
+    RemoveInternalTimer($name);
+    InternalTimer(gettimeofday() + 2, 'PID20_Reinitialize', $name, 0);
+    return;
+  }
+  delete $hash->{helper}{rebindWasStopped} unless $msg;
+  delete $hash->{helper}{initRetries};
 }
 
 sub PID20_Check($$$)
@@ -254,12 +290,17 @@ sub PID20_Check($$$)
 
   # if sensor unkonwn
   my $name = $hash->{NAME};
+  my $was_stopped = exists($hash->{helper}{rebindWasStopped})
+    ? $hash->{helper}{rebindWasStopped}
+    : exists($hash->{helper}{stopped})
+    ? $hash->{helper}{stopped}
+    : (ReadingsVal($name,'state','') eq 'stopped' ? 1 : 0);
 
   my $err     = 0;
 
   if ( !$defs{$sensor} )
   {
-    my $msg = "$name: Unknown sensor device $sensor specified";
+    $msg = "$name: Unknown sensor device $sensor specified";
     PID20_Log $hash, 1, $msg;
     #return $msg;
     $err = 1;
@@ -268,7 +309,7 @@ sub PID20_Check($$$)
   }
 
   # if reading of sender is unknown
-  if ( ReadingsVal( $sensor, $reading, 'unknownReading' ) eq 'unkownReading' )
+  if ( ReadingsVal( $sensor, $reading, 'unknownReading' ) eq 'unknownReading' )
   {
     $msg = "$name: Unknown reading $reading for sensor device $sensor specified";
     #PID20_Log $hash, 1, $msg;
@@ -300,7 +341,7 @@ sub PID20_Check($$$)
     $hash->{helper}{regexp}        = $regexp;
     $hash->{helper}{actor}         = $actor;
     $hash->{helper}{actorCommand}  = ( defined($cmd) ) ? $cmd : '';
-    $hash->{helper}{stopped}       = 0;
+    $hash->{helper}{stopped}       = $was_stopped ? 1 : 0;
     $hash->{helper}{adjust}        = '';
     delete $hash->{helper}{deltaHistory};
     delete $hash->{helper}{deltaOld};
@@ -342,8 +383,9 @@ sub PID20_Notify($$)
     return if !$events; # Some previous notify deleted the array.
     for my $evnt(@{$events}){
       if ($evnt =~ m/INITIALIZED|REREADCFG/){
-        my ($sensorinfo, $actorinfo) = split m{\s+}xms, $hash->{DEF};
-        return PID20_Check($hash, $sensorinfo, $actorinfo );
+        RemoveInternalTimer($name);
+        InternalTimer(gettimeofday() + 1, 'PID20_Reinitialize', $name, 0);
+        return;
       }
     }
   }
@@ -486,11 +528,13 @@ sub PID20_Set($@)
 		return 'Set start needs a <value> parameter'
 			if ( @a != 2 );
 		$hash->{helper}{stopped} = 0;
+		$hash->{helper}{rebindWasStopped} = 0 if exists($hash->{helper}{rebindWasStopped});
 		PID20_RestartTimer($hash,1);
 	} elsif ($cmd eq 'stop') {
 		return 'Set stop needs a <value> parameter'
 			if ( @a != 2 );
 		$hash->{helper}{stopped} = 1;
+		$hash->{helper}{rebindWasStopped} = 1 if exists($hash->{helper}{rebindWasStopped});
 		PID20_RestartTimer($hash,1);
 	} elsif ($cmd eq 'restart') {
 		return 'Set restart needs a <value> parameter'
@@ -502,6 +546,7 @@ sub PID20_Set($@)
 		return "value " . $a[2] . " is not a number"
 			if ( !defined($value) );
 		$hash->{helper}{stopped} = 0;
+		$hash->{helper}{rebindWasStopped} = 0 if exists($hash->{helper}{rebindWasStopped});
 		$hash->{helper}{adjust}  = $value;
 		PID20_RestartTimer($hash,1);
 		PID20_Log $hash, 3, "set $name $cmd $value";
@@ -528,6 +573,14 @@ sub PID20_Calc($)
 
   my ($name) = @_;
   my $hash = $defs{$name};
+  return unless $hash;
+  unless (defined($hash->{helper}{sensor}) && defined($hash->{helper}{reading})
+      && defined($hash->{helper}{actor})) {
+    PID20_Log $hash, 1, 'runtime bindings missing; scheduling safe reinitialization';
+    RemoveInternalTimer($name);
+    InternalTimer(gettimeofday() + 1, 'PID20_Reinitialize', $name, 0);
+    return;
+  }
 
   my $sensor  = $hash->{helper}{sensor};
   my $reading = $hash->{helper}{reading};
@@ -563,6 +616,7 @@ sub PID20_Calc($)
   my $deltaGradient    = ( $hash->{helper}{deltaGradient} ) ? $hash->{helper}{deltaGradient} : 0;
   my $calcReq          = 0;
   my $readingUpdateReq = '';
+  my $sensorFaultErrorPosReq = 0;
 
   # ---------------- check conditions
   while (1)
@@ -631,6 +685,18 @@ sub PID20_Calc($)
 
     # sensor dead
     $stateStr = 'alarm - dead sensor' if ( !$sensorIsAlive && $stateStr eq '' );
+
+    # Request errorPos immediately once when a sensor fault is first detected.
+    # Selecting freeze keeps the previous behavior unchanged.
+    if ( $sensorIsAlive || $hash->{helper}{actorErrorAction} ne 'errorPos' )
+    {
+      delete $hash->{helper}{sensorFaultErrorPosActive};
+    }
+    elsif ( !$hash->{helper}{sensorFaultErrorPosActive} )
+    {
+      $hash->{helper}{sensorFaultErrorPosActive} = 1;
+      $sensorFaultErrorPosReq = 1;
+    }
 
     # missing desired
     $stateStr = 'alarm - missing desired' if ( $desired eq '' && $stateStr eq '' );
@@ -791,6 +857,7 @@ sub PID20_Calc($)
         || $actuationKeepAliveReq    # request by keep alive
         || $rsLimit                  # upper or lower limit are exceeded
         || $actuationDone eq ''      # startup condition
+        || $sensorFaultErrorPosReq   # immediate one-shot sensor failsafe
     ) && $actuation ne '';           # acutation is initialized
 
     PID20_Log $hash, 2,
@@ -1006,7 +1073,7 @@ sub PID20_Attr($$$$)
 		<a id="PID20-attr-pidActorTreshold"></a>
 		<li><b>pidActorTreshold</b> - threshold to be reached before command will be sent to actor; default: 1</li>
 		<a id="PID20-attr-pidActorErrorAction"></a>
-		<li><b>pidActorErrorAction</b> - required action on error, possible values: freeze,errorPos; default: freeze</li>
+		<li><b>pidActorErrorAction</b> - required action on error, possible values: freeze,errorPos; default: freeze. If errorPos is selected, the configured error position is commanded immediately when a sensor timeout is first detected.</li>
 		<a id="PID20-attr-pidActorErrorPos"></a>
 		<li><b>pidActorErrorPos</b> - actor's position to be used in case of error; default: 0</li>
 		<a id="PID20-attr-pidActorKeepAlive"></a>
@@ -1034,7 +1101,7 @@ sub PID20_Attr($$$$)
 		<a id="PID20-attr-pidMeasuredName"></a>
 		<li><b>pidMeasuredName</b> - reading's name for measured value; default: measured</li>
 		<a id="PID20-attr-pidSensorTimeout"></a>
-		<li><b>pidSensorTimeout</b> - number of seconds to wait before sensor will be recognized n/a; default: 3600</li>
+		<li><b>pidSensorTimeout</b> - number of seconds to wait before sensor will be recognized n/a; default: 3600. The timestamp of the monitored reading must advance on every successful sensor update. Check attributes such as timestamp-on-change-reading, which can intentionally keep a timestamp unchanged and therefore cause false timeout alarms with short timeout values.</li>
 		<a id="PID20-attr-pidReverseAction"></a>
 		<li><b>pidReverseAction</b> - reverse PID operation mode, possible values: 0,1; default: 0.<br><br>
 		In this community version, reverse mode consistently reverses the P, I and D portions.</li>
@@ -1158,7 +1225,7 @@ You can use any dummy-command in define syntax, which will be ignored, if this a
 		<li><b>pidRoundReadings</b> &ndash; Rundung der Readings auf 2 bis 5 Dezimalstellen; Standard: keine Rundung.</li>
 		<li><b>pidActorInterval</b> &ndash; Mindestabstand zwischen Aktorbefehlen in Sekunden; Standard: 180.</li>
 		<li><b>pidActorTreshold</b> &ndash; erforderliche Änderung vor einem neuen Aktorbefehl; Standard: 1.</li>
-		<li><b>pidActorErrorAction</b> &ndash; Verhalten bei Fehlern: freeze oder errorPos; Standard: freeze.</li>
+		<li><b>pidActorErrorAction</b> &ndash; Verhalten bei Fehlern: freeze oder errorPos; Standard: freeze. Bei errorPos wird die konfigurierte Fehlerposition beim erstmalig erkannten Sensor-Timeout sofort angefahren.</li>
 		<li><b>pidActorErrorPos</b> &ndash; Aktorposition im Fehlerfall; Standard: 0.</li>
 		<li><b>pidActorKeepAlive</b> &ndash; Zeit bis zum erzwungenen Aktorbefehl in Sekunden; Standard: 1800.</li>
 		<li><b>pidActorLimitLower</b> / <b>pidActorLimitUpper</b> &ndash; untere und obere Aktorgrenze; Standard: 0 / 100.</li>
@@ -1170,7 +1237,7 @@ You can use any dummy-command in define syntax, which will be ignored, if this a
 		Der Wert 1 verwendet wie bisher den vorherigen und den aktuellen Wert. Bei größeren Werten wird die Steigung mittels linearer Regression über die angegebene Anzahl zurückliegender Werte zuzüglich des aktuellen Wertes berechnet. Dadurch wirken Messrauschen und kurze Schwankungen weniger stark auf den D-Anteil.</li>
 		<li><b>pidReverseAction</b> &ndash; umgekehrte Wirkrichtung (0 oder 1); Standard: 0.<br/><br/>
 		In dieser Community-Version werden bei aktivierter Umkehrung P-, I- und D-Anteil einheitlich umgekehrt.</li>
-		<li><b>pidSensorTimeout</b> &ndash; Zeit bis zur Erkennung eines ausgefallenen Sensors; Standard: 3600 Sekunden.</li>
+		<li><b>pidSensorTimeout</b> &ndash; Zeit bis zur Erkennung eines ausgefallenen Sensors; Standard: 3600 Sekunden. Der Zeitstempel des &uuml;berwachten Readings muss bei jeder erfolgreichen Sensoraktualisierung fortgeschrieben werden. Insbesondere timestamp-on-change-reading pr&uuml;fen: Dieses Attribut kann den Zeitstempel bei unver&auml;ndertem Messwert absichtlich stehen lassen und bei kurzen Timeout-Werten einen falschen Sensoralarm ausl&ouml;sen.</li>
 		<li><b>pidUpdateInterval</b> &ndash; Zeit bis zur erzwungenen Aktualisierung für Plots; Standard: 300 Sekunden.</li>
 		<li><b>pidActorCallBeforeSetting</b> &ndash; optionale Callback-Funktion zur Anpassung des Aktorwertes.</li>
 		<li><b>pidIPortionCallBeforeSetting</b> &ndash; optionale Callback-Funktion zur Anpassung des I-Anteils.</li>

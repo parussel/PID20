@@ -1,3 +1,11 @@
+2026-11-15 PID20 1.1.2-community
+- Bei `pidActorErrorAction=errorPos` wird die konfigurierte Fehlerposition beim
+  erstmalig erkannten Sensor-Timeout jetzt sofort angefahren.
+- `freeze` und alle bisherigen Standardwerte bleiben abwärtskompatibel.
+- Die Hilfe weist darauf hin, dass der Zeitstempel des überwachten Readings
+  fortgeschrieben werden muss und `timestamp-on-change-reading` bei kurzen
+  Timeouts einen falschen Sensoralarm auslösen kann.
+
 2026-10-16 PID20 1.1.1-community
 - `pidReverseAction` kehrt jetzt auch den D-Anteil um.
 - `pidDIntegration` ergänzt eine optionale Glättung des D-Anteils.
