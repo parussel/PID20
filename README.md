@@ -4,6 +4,13 @@ Eigenständige Community-Erweiterung des FHEM-Reglers `PID20`. Dateiname
 `98_PID20.pm` und Gerätetyp `PID20` bleiben erhalten, damit bestehende
 Definitionen weiterverwendet werden können.
 
+> **Teil der erweiterten Heizungsregelung:** Dieses Modul gehört zu dem von
+> Frank Parussel überarbeiteten FHEM-Modulverbund aus `OW2S0SMSGUARD`,
+> `TempReadingFilter`, `PWM`, `PWMR`, `PWMK` und `PID20`. Hydraulik, Sensorik,
+> Messwertfreigabe und Zusammenspiel sind in der
+> **[zentralen Dokumentation der Heizungsregelkette](https://github.com/parussel/PWM-PWMR/blob/main/HEIZUNGSREGELKETTE.md)**
+> zusammenhängend beschrieben.
+
 > **Status und Hinweis:** Kein offizieller Bestandteil von FHEM. Das Modul
 > wurde automatisiert und im praktischen FHEM-Betrieb geprüft; eine breite
 > Erprobung an unterschiedlichen Anlagen steht noch aus. Vor der Installation
